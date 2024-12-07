@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malaria Prediction App</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        form { margin: 20px; }
+        input { margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Malaria Prediction App</h1>
+    <div id="user-section">
+        <h2>User Registration/Login</h2>
+        <form id="register-form">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Register</button>
+        </form>
+        <form id="login-form">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <button id="logout-button" style="display: none;">Logout</button>
+    </div>
+    <div id="weather-section" style="display: none;">
+        <h2>Get Weather and Malaria Risk</h2>
+        <form id="weather-form">
+            <input type="text" name="location" placeholder="Enter City" required>
+            <button type="submit">Get Weather</button>
+        </form>
+        <div id="weather-result"></div>
+    </div>
+    <script>
+        const registerForm = document.getElementById("register-form");
+        const loginForm = document.getElementById("login-form");
+        const logoutButton = document.getElementById("logout-button");
+        const weatherForm = document.getElementById("weather-form");
+        const weatherSection = document.getElementById("weather-section");
+        const weatherResult = document.getElementById("weather-result");
+
+        const handleResponse = async (response, callback) => {
+            const data = await response.json();
+            if (response.ok) callback(data);
+            else alert(data.error || "An error occurred.");
+        };
+
+        registerForm.onsubmit = (e) => {
+            e.preventDefault();
+            fetch("/register", {
+                method: "POST",
+                body: new FormData(registerForm),
+            }).then((res) => handleResponse(res, (data) => alert(data.success)));
+        };
+
+        loginForm.onsubmit = (e) => {
+            e.preventDefault();
+            fetch("/login", {
+                method: "POST",
+                body: new FormData(loginForm),
+            }).then((res) =>
+                handleResponse(res, (data) => {
+                    alert(data.success);
+                    weatherSection.style.display = "block";
+                    logoutButton.style.display = "block";
+                    loginForm.style.display = "none";
+                    registerForm.style.display = "none";
+                })
+            );
+        };
+
+        logoutButton.onclick = () => {
+            fetch("/logout", { method: "POST" }).then((res) =>
+                handleResponse(res, (data) => {
+                    alert(data.success);
+                    weatherSection.style.display = "none";
+                    logoutButton.style.display = "none";
+                    loginForm.style.display = "block";
+                    registerForm.style.display = "block";
+                })
+            );
+        };
+
+        weatherForm.onsubmit = (e) => {
+            e.preventDefault();
+            fetch("/weather", {
+                method: "POST",
+                body: new FormData(weatherForm),
+            }).then((res) =>
+                handleResponse(res, (data) => {
+                    const weather = data.weather;
+                    const location = data.location;
+                    const malariaRisk = data.malaria_risk;
+                    weatherResult.innerHTML = `
+                        <p><strong>Location:</strong> ${location.district}, ${location.country}</p>
+                        <p><strong>Temperature:</strong> ${weather.temp}°C</p>
+                        <p><strong>Humidity:</strong> ${weather.humidity}%</p>
+                        <p><strong>Description:</strong> ${weather.description}</p>
+                        <p><strong>Malaria Risk:</strong> ${malariaRisk}</p>
+                    `;
+                })
+            );
+        };
+    </script>
+</body>
+</html>
